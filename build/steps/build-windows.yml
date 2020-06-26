@@ -13,6 +13,7 @@ parameters:
   includeUwp: 'true'
   includeAndroid: 'true'
   includeNonUwpAndNonAndroid: 'true'
+  runUITests: 'false'
 
 steps:
   - checkout: self
@@ -191,6 +192,45 @@ steps:
         **/*.binlog
 
       TargetFolder: ${{ parameters.artifactsTargetFolder }}
+      
+#  - task: VSBuild@1
+#    inputs:
+#      platform: 'x86'
+#      solution: 'Xamarin.Forms.sln'
+#      configuration: '$(BuildConfiguration)'
+#      msbuildArgs: ' /bl:$(Build.ArtifactStagingDirectory)/appx-$(BuildConfiguration).binlog /p:AppxBundlePlatforms="x86|x64" /p:AppxPackageDir="$(Build.ArtifactStagingDirectory)\AppxPackages\$(BuildConfiguration)" /p:AppxBundle=Always /p:UapAppxPackageBuildMode=StoreUpload'
+
+      
+  - task: VSBuild@1
+    inputs:
+      platform: 'x86'
+      solution: 'Xamarin.Forms.ControlGallery.WindowsUniversal/Xamarin.Forms.ControlGallery.WindowsUniversal.csproj'
+      configuration: '$(BuildConfiguration)'
+      msbuildArgs: '/bl:$(Build.ArtifactStagingDirectory)/appx-proj-$(BuildConfiguration).binlog /p:AppxBundlePlatforms="x86" /p:AppxPackageDir="$(Build.ArtifactStagingDirectory)\AppxPackagesProj\$(BuildConfiguration)" /p:AppxBundle=Always /p:UapAppxPackageBuildMode=StoreUpload'
+
+
+  # - task: WinAppDriver.winappdriver-pipelines-task.winappdriver-pipelines-task.Windows Application Driver@0
+  #   displayName: 'Start - WinAppDriver'
+  #   inputs:
+  #     WADArguments: 127.0.0.1 4723/wd/hub
+  #     AgentResolution: 1080p
+
+  - task: VSTest@2
+    displayName: 'UI Tests'
+    inputs:
+      testAssemblyVer2: |
+        **/bin/$(BuildConfiguration)/Xamarin.Forms.Core.Windows.UITests.dll
+      searchFolder: ${{ parameters.nunitTestFolder }}
+      codeCoverageEnabled: true
+      testRunTitle: '$(BuildConfiguration)_UITests'
+      configuration: '$(BuildConfiguration)'
+      diagnosticsEnabled: true
+
+  
+  # - task: WinAppDriver.winappdriver-pipelines-task.winappdriver-pipelines-task.Windows Application Driver@0
+  #   displayName: 'Stop - WinAppDriver'
+  #   inputs:
+  #     OperationType: Stop
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact: ${{ parameters.artifactsName }}'
