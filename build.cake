@@ -390,7 +390,7 @@ Task ("cg-uwp-build-tests")
     });
 
     var buildSettings = 
-            GetMSBuildSettings();
+            GetMSBuildSettings().WithRestore();
 
     MSBuild("./Xamarin.Forms.Core.Windows.UITests\\Xamarin.Forms.Core.Windows.UITests.csproj", buildSettings);
 });
