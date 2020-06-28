@@ -363,6 +363,7 @@ Task("provision-netsdk-local")
 
 var UWP_PACKAGE_ID = "0d4424f6-1e29-4476-ac00-ba22c3789cb6";
 Task ("cg-uwp-build-tests")
+    .IsDependentOn("BuildTasks")
     .Does (() =>
 {
     // Nuget restore
