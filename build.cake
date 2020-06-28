@@ -45,8 +45,8 @@ var NUNIT_TEST_WHERE = Argument("NUNIT_TEST_WHERE", "cat == Issues && cat != Man
 
 var UWP_PACKAGE_ID = "0d4424f6-1e29-4476-ac00-ba22c3789cb6";
 var UWP_TEST_LIBRARY = Argument("UWP_TEST_LIBRARY", $"./Xamarin.Forms.Core.Windows.UITests/bin/{configuration}/Xamarin.Forms.Core.Windows.UITests.dll");
-var UWP_PFX_LOCATION = Argument("UWP_PFX_LOCATION", "Xamarin.Forms.ControlGallery.WindowsUniversal\\Xamarin.Forms.ControlGallery.WindowsUniversal_TemporaryKey.pfx");
-var UWP_APPX_LOCATION = Argument("UWP_APPX_LOCATION", "*/AppPackages/*/Dependencies/x86/*.appx");
+var UWP_PFX_PATH = Argument("UWP_PFX_PATH", "Xamarin.Forms.ControlGallery.WindowsUniversal\\Xamarin.Forms.ControlGallery.WindowsUniversal_TemporaryKey.pfx");
+var UWP_APP_PACKAGES_PATH = Argument("UWP_APP_PACKAGES_PATH", "*/AppPackages/");
 
 var ANDROID_RENDERERS = Argument("ANDROID_RENDERERS", "FAST");
 var XamarinFormsVersion = Argument("XamarinFormsVersion", "");
@@ -420,10 +420,10 @@ Task ("cg-uwp-deploy")
     // Try to uninstall the app if it exists from before
     uninstallPS();
 
-    StartProcess("certutil", "-f -p \"\" -importpfx \"" + UWP_PFX_LOCATION + "\"");
+    StartProcess("certutil", "-f -p \"\" -importpfx \"" + UWP_PFX_PATH + "\"");
     
     // Install the appx
-    var dependencies = GetFiles(UWP_APPX_LOCATION);
+    var dependencies = GetFiles(UWP_APP_PACKAGES_PATH + "*/Dependencies/x86/*.appx");
     foreach (var dep in dependencies) {
         try
         {
@@ -436,7 +436,7 @@ Task ("cg-uwp-deploy")
         }
     }
 
-    var appxBundlePath = GetFiles("./*/AppPackages/*/*.appxbundle").First ();
+    var appxBundlePath = GetFiles(UWP_APP_PACKAGES_PATH + "*/*.appxbundle").First ();
     Information("Installing appx: {0}", appxBundlePath);
     StartProcess ("powershell", "Add-AppxPackage -Path \"" + MakeAbsolute(appxBundlePath).FullPath + "\"");
 });
