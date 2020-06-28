@@ -45,7 +45,8 @@ var NUNIT_TEST_WHERE = Argument("NUNIT_TEST_WHERE", "cat == Issues && cat != Man
 
 var UWP_PACKAGE_ID = "0d4424f6-1e29-4476-ac00-ba22c3789cb6";
 var UWP_TEST_LIBRARY = Argument("UWP_TEST_LIBRARY", $"./Xamarin.Forms.Core.Windows.UITests/bin/{configuration}/Xamarin.Forms.Core.Windows.UITests.dll");
-    
+var UWP_PFX_LOCATION = Argument("UWP_PFX_LOCATION", "Xamarin.Forms.ControlGallery.WindowsUniversal\\Xamarin.Forms.ControlGallery.WindowsUniversal_TemporaryKey.pfx");
+
 var ANDROID_RENDERERS = Argument("ANDROID_RENDERERS", "FAST");
 var XamarinFormsVersion = Argument("XamarinFormsVersion", "");
 var packageVersion = Argument("packageVersion", "");
@@ -418,7 +419,7 @@ Task ("cg-uwp-deploy")
     // Try to uninstall the app if it exists from before
     uninstallPS();
 
-    StartProcess("certutil", "-f -p \"\" -importpfx \"Xamarin.Forms.ControlGallery.WindowsUniversal\\Xamarin.Forms.ControlGallery.WindowsUniversal_TemporaryKey.pfx\"");
+    StartProcess("certutil", "-f -p \"\" -importpfx \"" + UWP_PFX_LOCATION + "\"");
     
     // Install the appx
     var dependencies = GetFiles("./*/AppPackages/*/Dependencies/x86/*.appx");
