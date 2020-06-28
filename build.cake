@@ -35,7 +35,7 @@ PowerShell:
 //////////////////////////////////////////////////////////////////////
 
 var target = Argument("target", "Default");
-var NUNIT_TEST_WHERE = Argument("NUNIT_TEST_WHERE", "cat == Issues && cat != ManualReview && method == UpdatingSourceOfDisposedListViewDoesNotCrash");
+var NUNIT_TEST_WHERE = Argument("NUNIT_TEST_WHERE", "cat == Issues && cat != ManualReview && method == Issue2923TestOne");
 
 var ANDROID_RENDERERS = Argument("ANDROID_RENDERERS", "FAST");
 var XamarinFormsVersion = Argument("XamarinFormsVersion", "");
@@ -376,7 +376,7 @@ Task ("cg-uwp-build-tests")
         c.Configuration = "Debug";
         c.Properties["ContinuousIntegrationBuild"] = new List<string> { "false" };
         c.Properties["AppxBundlePlatforms"] = new List<string> { "x86" };
-        c.Properties["Platform"] = new List<string> { "x86" };
+       // c.Properties["Platform"] = new List<string> { "x86" };
         c.Properties["AppxBundle"] = new List<string> { "Always" };
         
         c.Properties["UapAppxPackageBuildMode"] = new List<string> { "StoreUpload" };
