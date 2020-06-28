@@ -103,6 +103,7 @@ Information ("buildForVS2017: {0}", buildForVS2017);
 Information ("Agent.Name: {0}", agentName);
 Information ("isCIBuild: {0}", isCIBuild);
 Information ("artifactStagingDirectory: {0}", artifactStagingDirectory);
+Information ("workingDirectory: {0}", workingDirectory);
 
 var releaseChannel = ReleaseChannel.Stable;
 if(releaseChannelArg == "Preview")
