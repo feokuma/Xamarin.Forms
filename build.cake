@@ -35,7 +35,7 @@ PowerShell:
 //////////////////////////////////////////////////////////////////////
 
 var target = Argument("target", "Default");
-var NUNIT_TEST_WHERE = Argument("NUNIT_TEST_WHERE", "cat == Issues && cat != ManualReview");
+var NUNIT_TEST_WHERE = Argument("NUNIT_TEST_WHERE", "cat == Issues && cat != ManualReview && method == UpdatingSourceOfDisposedListViewDoesNotCrash");
 
 var ANDROID_RENDERERS = Argument("ANDROID_RENDERERS", "FAST");
 var XamarinFormsVersion = Argument("XamarinFormsVersion", "");
@@ -453,7 +453,7 @@ Task("_cg-uwp-run-tests")
                 Params = new Dictionary<string, string>()
                 {
                 },
-                Where = "cat == Issues && cat != ManualReview && method == UpdatingSourceOfDisposedListViewDoesNotCrash"
+                Where = NUNIT_TEST_WHERE
             });
     });
 

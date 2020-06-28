@@ -198,11 +198,13 @@ steps:
   - task: WinAppDriver.winappdriver-pipelines-task.winappdriver-pipelines-task.Windows Application Driver@0
     displayName: 'Start - WinAppDriver'
     inputs:
-      WADArguments: 127.0.0.1 4723/wd/hub
       AgentResolution: 1080p
   
   - script: build.cmd -Target cg-uwp-build-tests
     displayName: 'Build Uwp Tests'
+
+  - script: build.cmd -Target cg-uwp-run-tests
+    displayName: 'Install Uwp Tests'
 
   - script: build.cmd -Target _cg-uwp-run-tests
     displayName: 'Build Run UI Tests'
