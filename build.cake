@@ -34,9 +34,17 @@ PowerShell:
 // ARGUMENTS
 //////////////////////////////////////////////////////////////////////
 
+string agentName = EnvironmentVariable("AGENT_NAME", "");
+bool isCIBuild = !String.IsNullOrWhiteSpace(agentName);
+string artifactStagingDirectory = EnvironmentVariable("BUILD_ARTIFACTSTAGINGDIRECTORY", ".");
+string workingDirectory = EnvironmentVariable("SYSTEM_DEFAULTWORKINGDIRECTORY", ".");
+var configuration = Argument("BUILD_CONFIGURATION", "Debug");
+
 var target = Argument("target", "Default");
 var NUNIT_TEST_WHERE = Argument("NUNIT_TEST_WHERE", "cat == Issues && cat != ManualReview && method == Issue2923TestOne");
+
 var UWP_PACKAGE_ID = "0d4424f6-1e29-4476-ac00-ba22c3789cb6";
+var UWP_TEST_LIBRARY = Argument("UWP_TEST_LIBRARY", $"./Xamarin.Forms.Core.Windows.UITests/bin/{configuration}/Xamarin.Forms.Core.Windows.UITests.dll");
 
 var ANDROID_RENDERERS = Argument("ANDROID_RENDERERS", "FAST");
 var XamarinFormsVersion = Argument("XamarinFormsVersion", "");
@@ -49,7 +57,6 @@ bool buildForVS2017 = Convert.ToBoolean(Argument("buildForVS2017", "false"));
 string agentName = EnvironmentVariable("AGENT_NAME", "");
 bool isHostedAgent = agentName.StartsWith("Azure Pipelines");
 bool isCIBuild = !String.IsNullOrWhiteSpace(agentName);
-string artifactStagingDirectory = EnvironmentVariable("BUILD_ARTIFACTSTAGINGDIRECTORY", ".");
 
 var ANDROID_HOME = EnvironmentVariable("ANDROID_HOME") ??
     (IsRunningOnWindows () ? "C:\\Program Files (x86)\\Android\\android-sdk\\" : "");
@@ -397,7 +404,7 @@ Task ("cg-uwp-build-tests")
     var buildSettings = 
             GetMSBuildSettings().WithRestore();
 
-    MSBuild("./Xamarin.Forms.Core.Windows.UITests\\Xamarin.Forms.Core.Windows.UITests.csproj", buildSettings);
+    MSBuild("Xamarin.Forms.Core.Windows.UITests\\Xamarin.Forms.Core.Windows.UITests.csproj", buildSettings);
 });
 
 Task ("cg-uwp-deploy")
@@ -413,7 +420,7 @@ Task ("cg-uwp-deploy")
     // Try to uninstall the app if it exists from before
     uninstallPS();
 
-    StartProcess("certutil", "-f -p \"\" -importpfx \"Xamarin.Forms.ControlGallery.WindowsUniversal\\Xamarin.Forms.ControlGallery.WindowsUniversal_TemporaryKey.pfx\"");
+    StartProcess("certutil", "-f -p \"\" -importpfx \"" + workingDirectory +"\\Xamarin.Forms.ControlGallery.WindowsUniversal\\Xamarin.Forms.ControlGallery.WindowsUniversal_TemporaryKey.pfx\"");
     
     // Install the appx
     var dependencies = GetFiles("./*/AppPackages/*/Dependencies/x86/*.appx");
@@ -437,7 +444,7 @@ Task ("cg-uwp-deploy")
 Task("cg-uwp-run-tests")
     .Does(() =>
     {
-        NUnit3(new [] { "./Xamarin.Forms.Core.Windows.UITests/bin/Debug/Xamarin.Forms.Core.Windows.UITests.dll" },
+        NUnit3(new [] { UWP_TEST_LIBRARY },
             new NUnit3Settings {
                 Params = new Dictionary<string, string>()
                 {
@@ -448,15 +455,9 @@ Task("cg-uwp-run-tests")
 
 Task("cg-uwp-run-tests-ci")
     .IsDependentOn("cg-uwp-deploy")
+    .IsDependentOn("cg-uwp-run-tests")
     .Does(() =>
     {
-        NUnit3(new [] { "./Xamarin.Forms.Core.Windows.UITests/bin/Debug/Xamarin.Forms.Core.Windows.UITests.dll" },
-            new NUnit3Settings {
-                Params = new Dictionary<string, string>()
-                {
-                },
-                Where = NUNIT_TEST_WHERE
-            });
     });
 
 Task("provision-uitests-uwp")

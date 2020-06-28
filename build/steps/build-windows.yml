@@ -246,6 +246,16 @@ steps:
       CleanTargetFolder: false
       flattenFolders: false
 
+  - task: CopyFiles@2
+    displayName: 'Copy Certificate File'
+    condition: eq(variables['BuildConfiguration'], 'Debug')
+    inputs:
+      Contents: |
+        Xamarin.Forms.ControlGallery.WindowsUniversal\Xamarin.Forms.ControlGallery.WindowsUniversal_TemporaryKey.pfx
+      TargetFolder: '$(build.artifactstagingdirectory)'
+      CleanTargetFolder: false
+      flattenFolders: false
+
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact: ${{ parameters.artifactsName }}'
     condition: always()
