@@ -18,6 +18,7 @@ parameters:
 steps:
   - checkout: self
     clean: true
+
   - script: build.cmd -Target provision
     displayName: 'Cake Provision'
     condition: eq(variables['provisioningCake'], 'true')
@@ -209,28 +210,33 @@ steps:
       msbuildArgs: '/bl:$(Build.ArtifactStagingDirectory)/appx-proj-$(BuildConfiguration).binlog /p:AppxBundlePlatforms="x86" /p:AppxPackageDir="$(Build.ArtifactStagingDirectory)\AppxPackagesProj\$(BuildConfiguration)" /p:AppxBundle=Always /p:UapAppxPackageBuildMode=StoreUpload'
 
 
-  # - task: WinAppDriver.winappdriver-pipelines-task.winappdriver-pipelines-task.Windows Application Driver@0
-  #   displayName: 'Start - WinAppDriver'
+   - task: WinAppDriver.winappdriver-pipelines-task.winappdriver-pipelines-task.Windows Application Driver@0
+     displayName: 'Start - WinAppDriver'
+     inputs:
+       WADArguments: 127.0.0.1 4723/wd/hub
+       AgentResolution: 1080p
+
+  # - task: VSTest@2
+  #   displayName: 'UI Tests'
   #   inputs:
-  #     WADArguments: 127.0.0.1 4723/wd/hub
-  #     AgentResolution: 1080p
+  #     testAssemblyVer2: |
+  #       **/bin/$(BuildConfiguration)/Xamarin.Forms.Core.Windows.UITests.dll
+  #     searchFolder: ${{ parameters.nunitTestFolder }}
+  #     codeCoverageEnabled: true
+  #     testRunTitle: '$(BuildConfiguration)_UITests'
+  #     configuration: '$(BuildConfiguration)'
+  #     diagnosticsEnabled: true
 
-  - task: VSTest@2
-    displayName: 'UI Tests'
-    inputs:
-      testAssemblyVer2: |
-        **/bin/$(BuildConfiguration)/Xamarin.Forms.Core.Windows.UITests.dll
-      searchFolder: ${{ parameters.nunitTestFolder }}
-      codeCoverageEnabled: true
-      testRunTitle: '$(BuildConfiguration)_UITests'
-      configuration: '$(BuildConfiguration)'
-      diagnosticsEnabled: true
+  - script: build.cmd -Target cg-uwp-build-tests
+    displayName: 'Build Uwp Tests'
 
+  - script: build.cmd -Target _cg-uwp-run-tests
+    displayName: 'Build Run UI Tests'
   
-  # - task: WinAppDriver.winappdriver-pipelines-task.winappdriver-pipelines-task.Windows Application Driver@0
-  #   displayName: 'Stop - WinAppDriver'
-  #   inputs:
-  #     OperationType: Stop
+  - task: WinAppDriver.winappdriver-pipelines-task.winappdriver-pipelines-task.Windows Application Driver@0
+    displayName: 'Stop - WinAppDriver'
+    inputs:
+      OperationType: Stop
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish Artifact: ${{ parameters.artifactsName }}'

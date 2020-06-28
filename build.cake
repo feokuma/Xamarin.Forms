@@ -35,6 +35,7 @@ PowerShell:
 //////////////////////////////////////////////////////////////////////
 
 var target = Argument("target", "Default");
+var NUNIT_TEST_WHERE = Argument("NUNIT_TEST_WHERE", "cat == Issues && cat != ManualReview");
 
 var ANDROID_RENDERERS = Argument("ANDROID_RENDERERS", "FAST");
 var XamarinFormsVersion = Argument("XamarinFormsVersion", "");
@@ -358,6 +359,101 @@ Task("provision-netsdk-local")
                 i++;
             }
         }
+    });
+
+var UWP_PACKAGE_ID = "0d4424f6-1e29-4476-ac00-ba22c3789cb6";
+Task ("cg-uwp-build-tests")
+    .Does (() =>
+{
+    // Nuget restore
+    MSBuild ("Xamarin.Forms.ControlGallery.WindowsUniversal\\Xamarin.Forms.ControlGallery.WindowsUniversal.csproj", c => {
+        c.Targets.Clear();
+        c.Targets.Add("Restore");
+    });
+    // Build the project (with ipa)
+    MSBuild ("Xamarin.Forms.ControlGallery.WindowsUniversal\\Xamarin.Forms.ControlGallery.WindowsUniversal.csproj", c => {
+        c.Configuration = "Debug";
+        c.Properties["ContinuousIntegrationBuild"] = new List<string> { "false" };
+        c.Properties["AppxBundlePlatforms"] = new List<string> { "x86" };
+        c.Properties["Platform"] = new List<string> { "x86" };
+        c.Properties["AppxBundle"] = new List<string> { "Always" };
+        
+        c.Properties["UapAppxPackageBuildMode"] = new List<string> { "StoreUpload" };
+        c.Properties["AppxPackageSigningEnabled"] = new List<string> { "true" };
+        c.Properties["PackageCertificateThumbprint"] = new List<string> { "a59087cc92a9a8117ffdb5255eaa155748f9f852" };
+        c.Properties["PackageCertificateKeyFile"] = new List<string> { "Xamarin.Forms.ControlGallery.WindowsUniversal_TemporaryKey.pfx" };
+        c.Properties["PackageCertificatePassword"] = new List<string> { "" };
+
+        c.Targets.Clear();
+        c.Targets.Add("Rebuild");
+    });
+
+    var buildSettings = 
+            GetMSBuildSettings();
+
+    MSBuild("./Xamarin.Forms.Core.Windows.UITests\\Xamarin.Forms.Core.Windows.UITests.csproj", buildSettings);
+});
+
+Task ("cg-uwp-run-tests")
+    //.IsDependentOn ("build-uwp")
+    .WithCriteria(IsRunningOnWindows())
+    .Does (() =>
+{
+    var uninstallPS = new Action (() => {
+        try {
+            StartProcess ("powershell",
+                "$app = Get-AppxPackage -Name " + UWP_PACKAGE_ID + "; if ($app) { Remove-AppxPackage -Package $app.PackageFullName }");
+        } catch { }
+    });
+    // Try to uninstall the app if it exists from before
+    uninstallPS();
+
+    StartProcess("certutil", "-f -p \"\" -importpfx \"Xamarin.Forms.ControlGallery.WindowsUniversal\\Xamarin.Forms.ControlGallery.WindowsUniversal_TemporaryKey.pfx\"");
+    
+    // Install the appx
+    var dependencies = GetFiles("./*/AppPackages/*/Dependencies/x86/*.appx");
+    foreach (var dep in dependencies) {
+        try
+        {
+            Information("Installing Dependency appx: {0}", dep);
+            StartProcess("powershell", "Add-AppxPackage -Path \"" + MakeAbsolute(dep).FullPath + "\"");
+        }
+        catch(Exception exc)
+        {
+            Information("Error: {0}", exc);
+        }
+    }
+
+    var appxBundlePath = GetFiles("./*/AppPackages/*/*.appxbundle").First ();
+    Information("Installing appx: {0}", appxBundlePath);
+    StartProcess ("powershell", "Add-AppxPackage -Path \"" + MakeAbsolute(appxBundlePath).FullPath + "\"");
+    /*
+    // Start the TCP Test results listener
+    Information("Started TCP Test Results Listener on port: {0}:{1}", TCP_LISTEN_HOST, TCP_LISTEN_PORT);
+    var tcpListenerTask = DownloadTcpTextAsync (TCP_LISTEN_PORT, UWP_TEST_RESULTS_PATH);
+    // Launch the app
+    Information("Running appx: {0}", appxBundlePath);
+    var ip = TCP_LISTEN_HOST.Replace(".", "-");
+    System.Diagnostics.Process.Start($"xamarin-essentials-device-tests://{ip}_{TCP_LISTEN_PORT}");
+    // Wait for the test results to come back
+    Information("Waiting for tests...");
+    tcpListenerTask.Wait ();
+    AddPlatformToTestResults(UWP_TEST_RESULTS_PATH, "UWP");
+    // Uninstall the app (this will terminate it too)
+    uninstallPS();
+    */
+});
+
+Task("_cg-uwp-run-tests")
+    .Does(() =>
+    {
+        NUnit3(new [] { "./Xamarin.Forms.Core.Windows.UITests/bin/Debug/Xamarin.Forms.Core.Windows.UITests.dll" },
+            new NUnit3Settings {
+                Params = new Dictionary<string, string>()
+                {
+                },
+                Where = "cat == Issues && cat != ManualReview && method == UpdatingSourceOfDisposedListViewDoesNotCrash"
+            });
     });
 
 Task("provision-uitests-uwp")
@@ -745,12 +841,12 @@ void StartVisualStudio(string sln = "Xamarin.Forms.sln")
          StartProcess("open", new ProcessSettings{ Arguments = "Xamarin.Forms.sln" });
 }
 
-MSBuildSettings GetMSBuildSettings(PlatformTarget? platformTarget = PlatformTarget.MSIL)
+MSBuildSettings GetMSBuildSettings(PlatformTarget? platformTarget = PlatformTarget.MSIL, string buildConfiguration = null)
 {
     var buildSettings =  new MSBuildSettings {
         PlatformTarget = platformTarget,
         MSBuildPlatform = Cake.Common.Tools.MSBuild.MSBuildPlatform.x86,
-        Configuration = configuration,
+        Configuration = buildConfiguration ?? configuration,
     };
 
     if(!String.IsNullOrWhiteSpace(XamarinFormsVersion))
